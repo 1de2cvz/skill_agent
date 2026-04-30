@@ -60,7 +60,8 @@ class SkillAgentTool(Tool):
         max_steps = int(tool_parameters.get("max_steps") or 8)
         memory_turns = int(tool_parameters.get("memory_turns") or 10)
         history_turns = int(tool_parameters.get("history_turns") or 0)
-        system_prompt = tool_parameters.get("system_prompt") or "你是一个xxxx"
+        # system_prompt = tool_parameters.get("system_prompt") or "你是一个xxxx" # 默认系统提示，用户可覆盖，但当前未开放入口
+        system_prompt = tool_parameters.get("system_prompt") or "你是一个智能助手，能够根据用户需求调用技能完成任务。"
         skills_root = _detect_skills_root(tool_parameters.get("skills_root"))
 
         if not query or not isinstance(query, str):
@@ -226,9 +227,10 @@ class SkillAgentTool(Tool):
             + f" session_dir={session_dir} skills_root={skills_root!s} skills_count={skills_count} "
             + f"query_len={len(query)}"
         )
+        # TODO 系统提示词，角色定义、渐进式披露流程、路径规则、依赖安装规则、补充规则、工具列表、JSON协议降级
+        default_role = "你是一个使用 Skills 文件夹作为“工具箱”的通用型 Agent。"
         system_content = (
-            system_prompt.strip()
-            + "\n\n你是一个使用 Skills 文件夹作为“工具箱”的通用型 Agent。\n"
+            (system_prompt.strip() if system_prompt.strip() != "你是一个xxxx" else default_role)
             + "\n[会话路径]\n"
             + f"- session_dir: {session_dir}\n"
             + f"- skills_root: {skills_root}\n"

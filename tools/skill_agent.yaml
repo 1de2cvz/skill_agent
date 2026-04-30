@@ -113,6 +113,28 @@ parameters:
       ja_JP: 以前の実行から挿入する原文のターン数
     llm_description: Inject previous turns as raw transcript for continuity.
     form: form
+
+  # 没有声明 system_prompt 参数：用于告诉模型角色、风格之类的调用
+  # 系统中补充 当前日期的获取，补充相关路径的定义
+  # 补充生成图表的函数内容
+
+  - name: system_prompt
+    type: string
+    required: false
+    default: "你是一个智能助手，能够根据用户需求调用技能完成任务。"
+    label:
+      en_US: System Prompt
+      zh_Hans: 系统提示词
+      pt_BR: System Prompt
+      ja_JP: システムプロンプト
+    human_description:
+      en_US: "Custom system prompt to define the agent's role and behavior."
+      zh_Hans: "自定义系统提示词，定义 Agent 的角色和行为"
+      pt_BR: "Custom system prompt to define the agent's role and behavior."
+      ja_JP: "エージェントの役割と動作を定義するカスタムシステムプロンプト"
+    llm_description: "Custom system prompt to define the agent's role and behavior."
+    form: form
+
 extra:
   python:
     source: tools/skill_agent.py
