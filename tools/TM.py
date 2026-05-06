@@ -123,7 +123,7 @@ class TMTool(Tool):
         if command in ("查看技能", "查看 技能", "查看"):
             skills = list_skills_sorted()
             if not skills:
-                yield self.create_text_message("❌当前没有已存入的技能包。\n")
+                yield self.create_text_message("[ERR]当前没有已存入的技能包。\n")
                 return
             lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(skills)]
             yield self.create_text_message("\n".join(lines))
@@ -139,7 +139,7 @@ class TMTool(Tool):
                 file_items = [tool_parameters["file"]]
 
             if not file_items:
-                yield self.create_text_message("❌未检测到上传的 zip 文件，请提供 files 参数。\n")
+                yield self.create_text_message("[ERR]未检测到上传的 zip 文件，请提供 files 参数。\n")
                 return
 
             skills_dir = get_skills_dir()
@@ -148,7 +148,7 @@ class TMTool(Tool):
             for file_item in file_items:
                 url, preferred_name = extract_url_and_name(file_item)
                 if not url:
-                    yield self.create_text_message("❌无法获取文件URL，请检查入参（files[i].url）。\n")
+                    yield self.create_text_message("[ERR]无法获取文件URL，请检查入参（files[i].url）。\n")
                     return
 
                 filename_attr = None
@@ -177,34 +177,34 @@ class TMTool(Tool):
                     try:
                         zip_path.write_bytes(content)
                     except Exception as e:
-                        yield self.create_text_message(f"❌保存临时文件失败：{e}\n")
+                        yield self.create_text_message(f"[ERR]保存临时文件失败：{e}\n")
                         return
 
                     extract_dir = tmp_dir / "extracted"
                     try:
                         _safe_extract_zip(zip_path, extract_dir)
                     except Exception as e:
-                        yield self.create_text_message(f"❌解压失败：{e}\n")
+                        yield self.create_text_message(f"[ERR]解压失败：{e}\n")
                         return
 
                     skill_folders = _find_skill_folders(extract_dir)
                     if not skill_folders:
-                        yield self.create_text_message("❌压缩包内未找到技能目录（应包含 SKILL.md）。\n")
+                        yield self.create_text_message("[ERR]压缩包内未找到技能目录（应包含 SKILL.md）。\n")
                         return
 
                     for folder in skill_folders:
                         target = skills_dir / folder.name
                         if target.exists():
-                            yield self.create_text_message(f"❌技能已存在：{folder.name}（请先删除同名技能）\n")
+                            yield self.create_text_message(f"[ERR]技能已存在：{folder.name}（请先删除同名技能）\n")
                             return
                         try:
                             shutil.move(str(folder), str(target))
                             installed.append(target.name)
                         except Exception as e:
-                            yield self.create_text_message(f"❌安装技能失败：{e}\n")
+                            yield self.create_text_message(f"[ERR]安装技能失败：{e}\n")
                             return
 
-            yield self.create_text_message("✅技能已安装：\n" + "\n".join(installed) + "\n")
+            yield self.create_text_message("[OK]技能已安装：\n" + "\n".join(installed) + "\n")
             skills = list_skills_sorted()
             lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(skills)]
             yield self.create_text_message("👓当前技能列表：\n" + ("\n".join(lines) if lines else "（空）\n"))
@@ -215,15 +215,15 @@ class TMTool(Tool):
             idx = int(m_del.group(1))
             skills = list_skills_sorted()
             if idx < 1 or idx > len(skills):
-                yield self.create_text_message("❌技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
+                yield self.create_text_message("[ERR]技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
                 return
             target = skills[idx - 1]
             try:
                 shutil.rmtree(target, ignore_errors=False)
             except Exception as e:
-                yield self.create_text_message(f"❌删除失败：{e}\n")
+                yield self.create_text_message(f"[ERR]删除失败：{e}\n")
                 return
-            yield self.create_text_message(f"✅已删除技能{idx}：{target.name}\n")
+            yield self.create_text_message(f"[OK]已删除技能{idx}：{target.name}\n")
             skills = list_skills_sorted()
             if not skills:
                 yield self.create_text_message("😑当前技能列表为空。\n")
@@ -237,7 +237,7 @@ class TMTool(Tool):
             idx = int(m_dl.group(1))
             skills = list_skills_sorted()
             if idx < 1 or idx > len(skills):
-                yield self.create_text_message("❌技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
+                yield self.create_text_message("[ERR]技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
                 return
             target = skills[idx - 1]
 
@@ -248,7 +248,7 @@ class TMTool(Tool):
                     shutil.make_archive(str(zip_path.with_suffix("")), "zip", root_dir=target.parent, base_dir=target.name)
                     blob = zip_path.read_bytes()
             except Exception as e:
-                yield self.create_text_message(f"❌读取文件失败：{e}\n")
+                yield self.create_text_message(f"[ERR]读取文件失败：{e}\n")
                 return
 
             mime_type, _ = mimetypes.guess_type(f"{target.name}.zip")

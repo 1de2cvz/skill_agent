@@ -46,21 +46,72 @@ parameters:
     llm_description: "Upload file(s) for the agent to process."
     form: llm
 
-  - name: model
-    type: model-selector
-    scope: llm
+#  - name: model
+#    type: model-selector
+#    scope: llm
+#    required: true
+#    label:
+#      en_US: Model
+#      zh_Hans: 大模型
+#      pt_BR: Model
+#      ja_JP: モデル
+#    human_description:
+#      en_US: Select an LLM to run this tool.
+#      zh_Hans: 选择用于运行本工具的大模型
+#      pt_BR: Select an LLM to run this tool.
+#      ja_JP: このツールを実行する LLM を選択します
+#    llm_description: Select an LLM to run this tool.
+#    form: form
+
+  - name: model_provider
+    type: string
     required: true
+    default: "langgenius/deepseek/deepseek"
     label:
-      en_US: Model
-      zh_Hans: 大模型
-      pt_BR: Model
-      ja_JP: モデル
+      en_US: Model Provider
+      zh_Hans: 模型供应商
+      pt_BR: Model Provider
+      ja_JP: モデルプロバイダー
     human_description:
-      en_US: Select an LLM to run this tool.
-      zh_Hans: 选择用于运行本工具的大模型
-      pt_BR: Select an LLM to run this tool.
-      ja_JP: このツールを実行する LLM を選択します
-    llm_description: Select an LLM to run this tool.
+      en_US: "Model provider identifier, e.g. langgenius/openai/openai, langgenius/deepseek/deepseek"
+      zh_Hans: "模型供应商标识，如 langgenius/openai/openai、langgenius/deepseek/deepseek"
+      pt_BR: "Model provider identifier"
+      ja_JP: "モデルプロバイダー識別子"
+    llm_description: "Model provider identifier"
+    form: form
+
+  - name: model_name
+    type: string
+    required: true
+    default: "deepseek-chat"
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+      pt_BR: Model Name
+      ja_JP: モデル名
+    human_description:
+      en_US: "Model name, e.g. gpt-4o, deepseek-chat, qwen-plus"
+      zh_Hans: "模型名称，如 gpt-4o、deepseek-chat、qwen-plus"
+      pt_BR: "Model name"
+      ja_JP: "モデル名"
+    llm_description: "Model name"
+    form: form
+
+  - name: model_mode
+    type: string
+    required: false
+    default: "chat"
+    label:
+      en_US: Model Mode
+      zh_Hans: 模型模式
+      pt_BR: Model Mode
+      ja_JP: モデルモード
+    human_description:
+      en_US: "Model mode: chat or completion (default: chat)"
+      zh_Hans: "模型模式：chat 或 completion（默认 chat）"
+      pt_BR: "Model mode: chat or completion"
+      ja_JP: "モデルモード：chat または completion"
+    llm_description: "Model mode"
     form: form
 
   - name: max_steps

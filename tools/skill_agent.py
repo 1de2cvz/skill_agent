@@ -44,6 +44,7 @@ from utils.skill_agent_storage import (
 from utils.skill_agent_uploads import _build_uploads_context
 
 from dify_plugin import Tool
+from dify_plugin.entities.model.llm import LLMModelConfig
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessageTool,
@@ -55,7 +56,18 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 class SkillAgentTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-        model = tool_parameters.get("model")
+        # model = tool_parameters.get("model")
+
+        model_provider = str(tool_parameters.get("model_provider") or "langgenius/deepseek/deepseek").strip()
+        model_name = str(tool_parameters.get("model_name") or "deepseek-chat").strip()
+        model_mode = str(tool_parameters.get("model_mode") or "chat").strip()
+        model = LLMModelConfig(
+            provider=model_provider,
+            model=model_name,
+            mode=model_mode,
+            completion_params={},
+        )
+
         query = tool_parameters.get("query")
         max_steps = int(tool_parameters.get("max_steps") or 8)
         memory_turns = int(tool_parameters.get("memory_turns") or 10)
@@ -65,7 +77,7 @@ class SkillAgentTool(Tool):
         skills_root = _detect_skills_root(tool_parameters.get("skills_root"))
 
         if not query or not isinstance(query, str):
-            yield self.create_text_message("❌缺少 query 参数\n")
+            yield self.create_text_message("[ERR]缺少 query 参数\n")
             return
         user_input = str(query)
 
@@ -89,7 +101,7 @@ class SkillAgentTool(Tool):
 
         if resume_pending and _is_deny_reply(user_input):
             _storage_set_json(storage, resume_key, None)
-            yield self.create_text_message("🤝已收到你的拒绝，本次不会在 temp 目录创建脚本继续执行。\n")
+            yield self.create_text_message("已收到你的拒绝，本次不会在 temp 目录创建脚本继续执行。\n")
             return
         if resume_pending and _is_allow_reply(user_input):
             candidate = str(resume_state.get("session_dir") or "").strip()
@@ -129,12 +141,12 @@ class SkillAgentTool(Tool):
             for item in file_items:
                 url, name = _extract_url_and_name(item)
                 if not url:
-                    yield self.create_text_message("❌未能获取上传文件 URL（files[i].url）。\n")
+                    yield self.create_text_message("[ERR]未能获取上传文件 URL（files[i].url）。\n")
                     return
                 try:
                     content = _download_file_content(str(url), timeout=45)
                 except Exception as e:
-                    yield self.create_text_message(f"❌文件下载失败：{str(e)}\n")
+                    yield self.create_text_message(f"[ERR]文件下载失败：{str(e)}\n")
                     return
                 ext = _infer_ext_from_url(str(url))
                 filename = _safe_filename(str(name) if name else None, fallback_ext=ext)
@@ -143,7 +155,7 @@ class SkillAgentTool(Tool):
                     with open(abs_path, "wb") as f:
                         f.write(content)
                 except Exception as e:
-                    yield self.create_text_message(f"❌保存上传文件失败：{str(e)}\n")
+                    yield self.create_text_message(f"[ERR]保存上传文件失败：{str(e)}\n")
                     return
 
                 rel_path = f"uploads/{filename}"
@@ -399,7 +411,7 @@ class SkillAgentTool(Tool):
                 nonlocal streamed_any
                 if not text:
                     return
-                tagged = "\n【🤖Skill_Agent】\n" + text.strip() + "\n\n"
+                tagged = "\n【Agent】\n" + text.strip() + "\n\n"
                 step = max(1, int(typing_chunk))
                 for i in range(0, len(tagged), step):
                     yield self.create_text_message(tagged[i : i + step])
@@ -477,7 +489,7 @@ class SkillAgentTool(Tool):
                         combined_text_live = "".join(text_parts).strip()
                         if combined_text_live and not saw_tool_calls and should_emit_user_text(combined_text_live):
                             if not emitted_prefix:
-                                yield self.create_text_message("\n【🤖Skill_Agent】\n")
+                                yield self.create_text_message("\n【Agent】\n")
                                 emitted_prefix = True
                             new = combined_text_live[emitted_len:]
                             if new:
@@ -508,7 +520,7 @@ class SkillAgentTool(Tool):
                     msg = str(e)
                     if "NameResolutionError" in msg or "Failed to resolve" in msg:
                         yield self.create_text_message(
-                            "❌ LLM 调用失败：无法解析模型服务域名（DNS/网络问题）。\n"
+                            "[ERR] LLM 调用失败：无法解析模型服务域名（DNS/网络问题）。\n"
                             "当前报错信息：\n"
                             + msg
                             + "\n\n请检查：\n"
@@ -517,7 +529,7 @@ class SkillAgentTool(Tool):
                             + "3) Dify 的模型供应商（通义）网络出站是否被限制\n"
                         )
                     else:
-                        yield self.create_text_message("❌ LLM 调用失败：\n" + msg)
+                        yield self.create_text_message("[ERR] LLM 调用失败：\n" + msg)
                     return
 
                 _dbg(
@@ -607,35 +619,35 @@ class SkillAgentTool(Tool):
 
                         if tool_name == "get_skill_metadata":
                             yield self.create_text_message(
-                                f"✅正在查看技能《{str(arguments.get('skill_name') or '')}》说明书…\n"
+                                f"[OK]正在查看技能《{str(arguments.get('skill_name') or '')}》说明书…\n"
                             )
                         elif tool_name == "list_skill_files":
                             yield self.create_text_message(
-                                f"✅正在查看技能《{str(arguments.get('skill_name') or '')}》文件结构…\n"
+                                f"[OK]正在查看技能《{str(arguments.get('skill_name') or '')}》文件结构…\n"
                             )
                         elif tool_name == "read_skill_file":
                             yield self.create_text_message(
-                                f"✅正在读取技能《{str(arguments.get('skill_name') or '')}》文件：{str(arguments.get('relative_path') or '')}…\n"
+                                f"[OK]正在读取技能《{str(arguments.get('skill_name') or '')}》文件：{str(arguments.get('relative_path') or '')}…\n"
                             )
                         elif tool_name == "run_skill_command":
                             yield self.create_text_message(
-                                f"✅正在执行技能《{str(arguments.get('skill_name') or '')}》命令…\n"
+                                f"[OK]正在执行技能《{str(arguments.get('skill_name') or '')}》命令…\n"
                             )
                         elif tool_name == "write_temp_file":
                             yield self.create_text_message(
-                                f"✅正在按说明书写入临时文件：{str(arguments.get('relative_path') or '')}…\n"
+                                f"[OK]正在按说明书写入临时文件：{str(arguments.get('relative_path') or '')}…\n"
                             )
                         elif tool_name == "read_temp_file":
                             yield self.create_text_message(
-                                f"✅正在读取临时文件：{str(arguments.get('relative_path') or '')}…\n"
+                                f"[OK]正在读取临时文件：{str(arguments.get('relative_path') or '')}…\n"
                             )
                         elif tool_name == "list_temp_files":
-                            yield self.create_text_message("✅正在查看临时目录文件…\n")
+                            yield self.create_text_message("[OK]正在查看临时目录文件…\n")
                         elif tool_name == "run_temp_command":
-                            yield self.create_text_message("✅正在执行临时命令…\n")
+                            yield self.create_text_message("[OK]正在执行临时命令…\n")
                         elif tool_name == "export_temp_file":
                             yield self.create_text_message(
-                                f"✅正在标记交付文件：{str(arguments.get('temp_relative_path') or '')}…\n"
+                                f"[OK]正在标记交付文件：{str(arguments.get('temp_relative_path') or '')}…\n"
                             )
 
                         if tool_name == "get_skill_metadata":
@@ -668,7 +680,7 @@ class SkillAgentTool(Tool):
                                 stderr = str(result.get("stderr") or "").strip()
                                 if stderr:
                                     yield self.create_text_message(
-                                        "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
+                                        "[ERR]命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
                                     )
                             if isinstance(result, dict) and result.get("error") == "no_executable_found":
                                 skill = str(result.get("skill") or arguments.get("skill_name") or "")
@@ -730,7 +742,7 @@ class SkillAgentTool(Tool):
                                 stderr = str(result.get("stderr") or "").strip()
                                 if stderr:
                                     yield self.create_text_message(
-                                        "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
+                                        "[ERR]命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
                                     )
                         elif tool_name == "export_temp_file":
                             temp_rel = str(arguments.get("temp_relative_path") or "")
@@ -889,27 +901,27 @@ class SkillAgentTool(Tool):
                 messages.append(AssistantPromptMessage(content=json.dumps(action, ensure_ascii=False)))
 
                 if name == "get_skill_metadata":
-                    yield self.create_text_message(f"✅正在查看技能《{str(arguments.get('skill_name') or '')}》说明书…\n")
+                    yield self.create_text_message(f"[OK]正在查看技能《{str(arguments.get('skill_name') or '')}》说明书…\n")
                 elif name == "list_skill_files":
-                    yield self.create_text_message(f"✅正在查看技能《{str(arguments.get('skill_name') or '')}》文件结构…\n")
+                    yield self.create_text_message(f"[OK]正在查看技能《{str(arguments.get('skill_name') or '')}》文件结构…\n")
                 elif name == "read_skill_file":
                     yield self.create_text_message(
-                        f"✅正在读取技能《{str(arguments.get('skill_name') or '')}》文件：{str(arguments.get('relative_path') or '')}…\n"
+                        f"[OK]正在读取技能《{str(arguments.get('skill_name') or '')}》文件：{str(arguments.get('relative_path') or '')}…\n"
                     )
                 elif name == "run_skill_command":
                     yield self.create_text_message(
-                        f"✅正在执行技能《{str(arguments.get('skill_name') or '')}》命令…\n"
+                        f"[OK]正在执行技能《{str(arguments.get('skill_name') or '')}》命令…\n"
                     )
                 elif name == "write_temp_file":
-                    yield self.create_text_message(f"✅正在按说明书写入临时文件：{str(arguments.get('relative_path') or '')}…\n")
+                    yield self.create_text_message(f"[OK]正在按说明书写入临时文件：{str(arguments.get('relative_path') or '')}…\n")
                 elif name == "read_temp_file":
-                    yield self.create_text_message(f"✅正在读取临时文件：{str(arguments.get('relative_path') or '')}…\n")
+                    yield self.create_text_message(f"[OK]正在读取临时文件：{str(arguments.get('relative_path') or '')}…\n")
                 elif name == "list_temp_files":
-                    yield self.create_text_message("✅正在查看临时目录文件…\n")
+                    yield self.create_text_message("[OK]正在查看临时目录文件…\n")
                 elif name == "run_temp_command":
-                    yield self.create_text_message("✅正在执行临时命令…\n")
+                    yield self.create_text_message("[OK]正在执行临时命令…\n")
                 elif name == "export_temp_file":
-                    yield self.create_text_message(f"✅正在标记交付文件：{str(arguments.get('temp_relative_path') or '')}…\n")
+                    yield self.create_text_message(f"[OK]正在标记交付文件：{str(arguments.get('temp_relative_path') or '')}…\n")
 
                 if name == "get_skill_metadata":
                     result = runtime.get_skill_metadata(str(arguments.get("skill_name") or ""))
@@ -990,7 +1002,7 @@ class SkillAgentTool(Tool):
                 if final_file_meta or has_files:
                     final_text = "已生成文件。"
                 else:
-                    final_text = f"❌超过最大执行轮数 max_steps={max_steps}，仍未得到最终结果"
+                    final_text = f"[ERR]超过最大执行轮数 max_steps={max_steps}，仍未得到最终结果"
         finally:
             if not resume_saved and not is_resuming and resume_pending:
                 _storage_set_json(storage, resume_key, None)
