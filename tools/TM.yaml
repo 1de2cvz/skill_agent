@@ -1,11 +1,11 @@
 identity:
-  name: "tm"
-  author: "lfenghx"
+  name: "tm_v2"
+  author: "pansoft7163"
   label:
-    en_US: "skill manager"
+    en_US: "Skill_Agent_V2 技能管理"
     zh_Hans: "技能管理"
-    pt_BR: "skill manager"
-    ja_JP: "skill manager"
+    pt_BR: "Skill_Agent_V2 技能管理"
+    ja_JP: "Skill_Agent_V2 技能管理"
 description:
   human:
     en_US: "Manage local skill packages (add/delete/list/download)."
